@@ -56,3 +56,14 @@ func (l *LetStatement) statementNode() {}
 
 // TokenLiteral returns the token literal value for the let statement
 func (l *LetStatement) TokenLiteral() string { return l.Token.Literal }
+
+// ReturnStatement node
+type ReturnStatement struct {
+	Token       token.Token
+	ReturnValue Expression
+}
+
+func (l *ReturnStatement) statementNode() {}
+
+// TokenLiteral returns the token literal value for the let statement
+func (l *ReturnStatement) TokenLiteral() string { return l.Token.Literal }
