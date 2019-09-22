@@ -122,3 +122,19 @@ func (e *ExpressionStatement) String() string {
 
 // TokenLiteral returns the token literal value for the let statement
 func (e *ExpressionStatement) TokenLiteral() string { return e.Token.Literal }
+
+// IntegerLiteral node
+type IntegerLiteral struct {
+	Token token.Token
+	Value int64
+}
+
+func (i *IntegerLiteral) expressionNode() {}
+
+// String returns the string representation of IntegerLiteral
+func (i *IntegerLiteral) String() string {
+	return i.Token.Literal
+}
+
+// TokenLiteral returns the token literal value for the integer
+func (i *IntegerLiteral) TokenLiteral() string { return i.Token.Literal }
