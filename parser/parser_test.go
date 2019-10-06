@@ -121,16 +121,7 @@ func TestIdentifierExpression(t *testing.T) {
 	if !ok {
 		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T", program.Statements[0])
 	}
-	ident, ok := stmt.Expression.(*ast.Identifier)
-	if !ok {
-		t.Fatalf("stmt.Expression not *ast.Identifier. got=%T", stmt.Expression)
-	}
-	if ident.Value != "thanos" {
-		t.Errorf("ident.Value not %s. got=%s", "thanos", ident.Value)
-	}
-	if ident.TokenLiteral() != "thanos" {
-		t.Errorf("ident.TokenLiteral not %s. got=%s", "thanos", ident.TokenLiteral())
-	}
+	testIdentifier(t, stmt.Expression, "thanos")
 }
 
 func TestIntegerLiteralExpression(t *testing.T) {
@@ -147,16 +138,7 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	if !ok {
 		t.Fatalf("program.Statements[0] is not *ast.ExpressionStatement. got=%T", program.Statements[0])
 	}
-	literal, ok := stmt.Expression.(*ast.IntegerLiteral)
-	if !ok {
-		t.Fatalf("stmt.Expression not *ast.IntegerLiteral.  got=%T", stmt.Expression)
-	}
-	if literal.Value != 42 {
-		t.Errorf("literal.Value not %d. got=%d", 42, literal.Value)
-	}
-	if literal.TokenLiteral() != "42" {
-		t.Errorf("literal.TokenLiteral not %s. got=%s", "42", literal.TokenLiteral())
-	}
+	testIntegerLiteral(t, stmt.Expression, 42)
 }
 
 func TestPrefixExpressions(t *testing.T) {
@@ -194,6 +176,23 @@ func TestPrefixExpressions(t *testing.T) {
 	}
 }
 
+func testIdentifier(t *testing.T, expression ast.Expression, value string) bool {
+	identifier, ok := expression.(*ast.Identifier)
+	if !ok {
+		t.Errorf("expression not *ast.Identifier. got=%T", expression)
+		return false
+	}
+	if identifier.Value != value {
+		t.Errorf("identifier.Value not %s. got=%s", identifier.Value, value)
+		return false
+	}
+	if identifier.TokenLiteral() != value {
+		t.Errorf("identifier.TokenLiteral not %s. got %s", value, identifier.TokenLiteral())
+		return false
+	}
+	return true
+}
+
 func testIntegerLiteral(t *testing.T, e ast.Expression, value int64) bool {
 	integerLiteral, ok := e.(*ast.IntegerLiteral)
 	if !ok {
@@ -206,6 +205,38 @@ func testIntegerLiteral(t *testing.T, e ast.Expression, value int64) bool {
 	}
 	if integerLiteral.TokenLiteral() != fmt.Sprintf("%d", value) {
 		t.Errorf("integerLiteral.TokenLiteral not %d. got=%s", value, integerLiteral.TokenLiteral())
+		return false
+	}
+	return true
+}
+
+func testLiteralExpression(t *testing.T, expression ast.Expression, expected interface{}) bool {
+	switch v := expected.(type) {
+	case int:
+		return testIntegerLiteral(t, expression, int64(v))
+	case int64:
+		return testIntegerLiteral(t, expression, v)
+	case string:
+		return testIdentifier(t, expression, v)
+	}
+	t.Errorf("type of expression not handled. got=%T", expression)
+	return false
+}
+
+func testInfixExpression(t *testing.T, expression ast.Expression, left interface{}, operator string, right interface{}) bool {
+	operatorExpression, ok := expression.(*ast.InfixExpression)
+	if !ok {
+		t.Errorf("expression is not *ast.Expression. got=%T(%s)", expression, expression)
+		return false
+	}
+	if !testLiteralExpression(t, operatorExpression.Left, left) {
+		return false
+	}
+	if operatorExpression.Operator != operator {
+		t.Errorf("operatorExpression is not %s. got=%q", operator, operatorExpression.Operator)
+		return false
+	}
+	if !testLiteralExpression(t, operatorExpression.Right, right) {
 		return false
 	}
 	return true
@@ -241,20 +272,9 @@ func TestParsingInfixExpressions(t *testing.T) {
 		if !ok {
 			t.Fatalf("program.Statements[0] is not an ast.ExpressionStatement. got=%T", program.Statements[0])
 		}
-		expression, ok := stmt.Expression.(*ast.InfixExpression)
-		if !ok {
-			t.Fatalf("stmt.Expression is not an ast.InfixExpression. got=%T", stmt.Expression)
-		}
-		if !testIntegerLiteral(t, expression.Left, tt.leftValue) {
+		if !testInfixExpression(t, stmt.Expression, tt.leftValue, tt.operator, tt.rightValue) {
 			return
 		}
-		if expression.Operator != tt.operator {
-			t.Fatalf("expression.Operator is not %s. got=%s", tt.operator, expression.Operator)
-		}
-		if !testIntegerLiteral(t, expression.Right, tt.rightValue) {
-			return
-		}
-
 	}
 }
 
