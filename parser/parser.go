@@ -29,6 +29,7 @@ var precedences = map[token.Type]int{
 	token.MINUS:   SUM,
 	token.SLASH:   PRODUCT,
 	token.ASTERIK: PRODUCT,
+	token.LPAREN:  CALL,
 }
 
 type (
@@ -319,6 +320,37 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 	return identifiers
 }
 
+func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
+	defer untrace(trace("parseCallExpression"))
+	expression := &ast.CallExpression{Token: p.currToken, Function: function}
+	expression.Arguments = p.parseCallArguments()
+	return expression
+}
+
+func (p *Parser) parseCallArguments() []ast.Expression {
+	defer untrace(trace("parseCallArguments"))
+	args := []ast.Expression{}
+
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		return args
+	}
+
+	p.nextToken()
+	args = append(args, p.parseExpression(LOWEST))
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		args = append(args, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+	return args
+}
+
 func (p *Parser) registerPrefix(tokenType token.Type, fn prefixParseFn) {
 	p.prefixParseFns[tokenType] = fn
 }
@@ -351,6 +383,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.NEQ, p.parseInfixExpression)
 	p.registerInfix(token.LT, p.parseInfixExpression)
 	p.registerInfix(token.GT, p.parseInfixExpression)
+	p.registerInfix(token.LPAREN, p.parseCallExpression)
 
 	return p
 }
