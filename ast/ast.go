@@ -289,7 +289,7 @@ func (c *CallExpression) String() string {
 	}
 	out.WriteString(c.Function.String())
 	out.WriteString("(")
-	out.WriteString(strings.Join(args, ","))
+	out.WriteString(strings.Join(args, ", "))
 	out.WriteString(")")
 	return out.String()
 }
